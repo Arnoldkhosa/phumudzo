@@ -1,44 +1,780 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
-        <title>Virtual Valentine's Day Card</title>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>A Special Letter for You</title>
+    
+    <!-- jQuery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+    
+    <!-- Google Fonts: Great Vibes (Script), Nunito (UI), Lora (Reading) -->
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Lora:ital,wght@0,400;0,600;1,400&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
 
-        <!-- Style CSS -->
-        <link rel="stylesheet" href="./style.css">
-    </head>
-    <body>
-        <h1 class="valentine">Hi, please click open</h1>
-        <div class="envelope-wrapper">
-            <div id="envelope" class="close">
-                <div class="front flap"></div>
-                <div class="front pocket"></div>
-                <div class="letter">
-                    <p class="words line1">My Dearest Bonolo,</p>
-<p class="words line2">
-From the moment we started talking, there was something about you that just felt right. Your intelligence, your way of thinking, and the way we seem to click so naturally really stands out to me. You’re truly amazing, and there’s a depth to you that I genuinely admire.  
+    <style>
+        :root {
+            --envelope-color: #ff9a9e;
+            --envelope-shadow: #ff6a88;
+            --pocket-color: #fad0c4;
+            --paper-color: #fffdf5;
+            --text-main: #4a4a4a;
+            --accent-color: #d6336c;
+        }
 
-I find myself wanting to spend more time with you—getting to know you better, sharing conversations, and building something meaningful together. There’s something special about the way we connect, and it’s not something I take lightly.  
+        * {
+            box-sizing: border-box;
+        }
 
-I’m really looking forward to spending more time with you and seeing where this can go.  
-<br>Arnold
-</p>
-                </div>
-                <div class="hearts">
-                    <div class="heart a1"></div>
-                    <div class="heart a2"></div>
-                    <div class="heart a3"></div>
+        html,
+        body {
+            width: 100%;
+            min-width: 100vw;
+            min-height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        body {
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100dvh;
+            /* Soft, romantic mesh gradient */
+            background-image: 
+                radial-gradient(at 40% 20%, hsla(28,100%,74%,1) 0px, transparent 50%),
+                radial-gradient(at 80% 0%, hsla(189,100%,56%,1) 0px, transparent 50%),
+                radial-gradient(at 0% 50%, hsla(355,100%,93%,1) 0px, transparent 50%),
+                radial-gradient(at 80% 50%, hsla(340,100%,76%,1) 0px, transparent 50%),
+                radial-gradient(at 0% 100%, hsla(22,100%,77%,1) 0px, transparent 50%),
+                radial-gradient(at 80% 100%, hsla(242,100%,70%,1) 0px, transparent 50%);
+            background-color: #fff0f3;
+            font-family: 'Nunito', sans-serif;
+            overflow: hidden; 
+            transition: background 0.5s ease;
+        }
+
+        /* Darken background when reading */
+        body.reading-mode {
+            background-color: #e0e0e0;
+            background-image: none;
+            background: #dcdcdc; /* Solid color for contrast behind letter */
+        }
+
+        body.reading-mode::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background:
+                radial-gradient(circle at 20% 20%, rgba(255, 94, 98, 0.22), transparent 28%),
+                radial-gradient(circle at 85% 15%, rgba(214, 51, 108, 0.18), transparent 24%),
+                radial-gradient(circle at 50% 90%, rgba(255, 154, 158, 0.22), transparent 30%);
+            opacity: 0.8;
+            animation: loveGlow 5s ease-in-out infinite alternate;
+            z-index: 900;
+        }
+
+        h1.valentine {
+            font-family: 'Great Vibes', cursive;
+            text-align: center;
+            width: 100%;
+            color: #d6336c;
+            font-size: 3.5rem;
+            margin: 0 0 2rem 0;
+            opacity: 0;
+            animation: fadeIn 1.5s ease-out forwards;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 10;
+            transition: opacity 0.5s;
+        }
+
+        body.reading-mode h1.valentine {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Container to manage 3D perspective */
+        .envelope-wrapper {
+            position: relative;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            perspective: 1500px; 
+            margin-bottom: 50px;
+            z-index: 5;
+            transition: transform 0.5s ease, opacity 0.5s ease;
+        }
+
+        /* 
+           FIX: Removed filter: blur() from here. 
+           We now apply the blur to specific children to keep the letter sharp.
+        */
+        body.reading-mode .envelope-wrapper {
+            perspective: none;
+            transform: none;
+            opacity: 1;
+            z-index: 1000;
+            pointer-events: auto;
+        }
+
+        /* We selectively blur only the envelope parts when in reading mode */
+        body.reading-mode .flap,
+        body.reading-mode .pocket {
+            opacity: 0.35;
+            filter: blur(4px);
+            pointer-events: none;
+            transition: filter 0.5s ease, opacity 0.5s ease;
+        }
+
+        #envelope {
+            position: relative;
+            width: 340px;
+            height: 220px;
+            background-color: var(--envelope-color);
+            margin: 0;
+            border-bottom-left-radius: 10px;
+            border-bottom-right-radius: 10px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            transform-style: preserve-3d;
+            cursor: pointer;
+        }
+
+        #envelope.close {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .front {
+            position: absolute;
+            width: 0;
+            height: 0;
+            z-index: 3;
+        }
+
+        .flap {
+            border-top: 110px solid var(--envelope-color);
+            border-left: 170px solid transparent;
+            border-right: 170px solid transparent;
+            border-bottom: 100px solid transparent;
+            transform-origin: top;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 5;
+            top: 0;
+            left: 0;
+        }
+
+        .flap::after {
+            content: '';
+            position: absolute;
+            top: -65px;
+            left: -15px;
+            width: 30px;
+            height: 30px;
+            background: #d32f2f;
+            border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2), inset 0 0 0 2px rgba(255,255,255,0.2);
+            transition: opacity 0.3s;
+        }
+        .flap::before {
+            content: '♥';
+            position: absolute;
+            top: -60px;
+            left: -10px;
+            color: rgba(255,255,255,0.8);
+            font-size: 18px;
+            z-index: 6;
+        }
+
+        .pocket {
+            border-left: 170px solid var(--envelope-shadow);
+            border-right: 170px solid var(--envelope-shadow);
+            border-bottom: 120px solid var(--pocket-color);
+            border-top: 100px solid transparent;
+            border-bottom-left-radius: 10px;
+            border-bottom-right-radius: 10px;
+            z-index: 4;
+            bottom: 0;
+            left: 0;
+            filter: brightness(0.95);
+        }
+
+        /* --- The Letter & Magic Reading Mode --- */
+        .letter {
+            position: absolute;
+            background-color: var(--paper-color);
+            /* Paper texture */
+            background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmZGY1Ii8+CjxyZWN0IHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNmN2YwZTUiLz4KPC9zdmc+');
+            
+            width: 90%;
+            height: 85%;
+            top: 15px;
+            left: 5%;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 2;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            
+            /* GPU acceleration to keep text sharp during transform */
+            will-change: transform, top, left, width, height;
+            -webkit-font-smoothing: antialiased; 
+
+            transition: 
+                transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), 
+                top 0.8s ease, 
+                left 0.8s ease,
+                width 0.8s ease,
+                height 0.8s ease,
+                box-shadow 0.8s ease,
+                border-radius 0.8s ease;
+            transform-origin: bottom center;
+        }
+
+        .letter-content {
+            height: 100%;
+            overflow-y: auto;
+            padding-right: 5px;
+            opacity: 0; 
+            transition: opacity 0.5s ease 0.3s; 
+        }
+        
+        .open .letter-content {
+            opacity: 1;
+        }
+
+        /* Custom Scrollbar */
+        .letter-content::-webkit-scrollbar { width: 6px; }
+        .letter-content::-webkit-scrollbar-track { background: transparent; }
+        .letter-content::-webkit-scrollbar-thumb { background-color: #ddd; border-radius: 10px; }
+
+        /* Typography inside letter */
+        p.salutation {
+            font-family: 'Great Vibes', cursive;
+            font-size: 24px;
+            color: var(--accent-color);
+            margin: 0 0 15px 0;
+        }
+
+        p.body-text {
+            font-family: 'Lora', serif; 
+            font-size: 15px;
+            line-height: 1.8;
+            color: var(--text-main);
+            margin: 0 0 15px 0;
+            text-align: justify;
+        }
+
+        p.signature {
+            font-family: 'Great Vibes', cursive;
+            font-size: 26px;
+            color: var(--accent-color);
+            text-align: right;
+            margin-top: auto;
+        }
+
+        /* --- READING MODE STATE --- */
+        body.reading-mode .letter {
+            position: fixed; 
+            top: 50%;
+            left: -25px;
+            right: -25px;
+            transform: translateY(-50%); 
+            width: auto;
+            max-width: none;
+            height: 95dvh;
+            max-height: none;
+            z-index: 1001;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            border-radius: 0;
+            pointer-events: auto;
+        }
+
+        body.reading-mode .letter-content {
+            width: 100%;
+            padding: clamp(8px, 2vw, 24px);
+            padding-right: clamp(8px, 2vw, 24px);
+        }
+
+        body.reading-mode p.salutation {
+            font-size: clamp(28px, 5vw, 48px);
+        }
+
+        body.reading-mode p.body-text {
+            font-size: clamp(15px, 2.2vw, 20px);
+        }
+
+        body.reading-mode p.signature {
+            font-size: clamp(30px, 5vw, 52px);
+        }
+
+        .reading-effects {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 1002;
+        }
+
+        .love-petal,
+        .love-glint {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .love-petal {
+            bottom: -30px;
+            left: var(--x);
+            width: var(--size);
+            height: var(--size);
+            background: var(--petal-color);
+            transform: rotate(45deg);
+            animation: petalDrift var(--duration) linear forwards;
+        }
+
+        .love-petal::before,
+        .love-petal::after {
+            content: "";
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: inherit;
+        }
+
+        .love-petal::before {
+            left: -50%;
+        }
+
+        .love-petal::after {
+            top: -50%;
+        }
+
+        .love-glint {
+            top: var(--y);
+            left: var(--x);
+            width: var(--size);
+            height: var(--size);
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 0 12px rgba(255, 255, 255, 0.95), 0 0 22px rgba(214, 51, 108, 0.45);
+            animation: glintPop 1.5s ease-out forwards;
+        }
+        
+        /* Close Button specifically for Reading Mode */
+        .close-reading-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(214, 51, 108, 0.1);
+            color: var(--accent-color);
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-family: sans-serif;
+            font-weight: bold;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.3s ease 0.8s; 
+            z-index: 101;
+        }
+
+        body.reading-mode .close-reading-btn {
+            opacity: 1;
+            transform: scale(1);
+        }
+        .close-reading-btn:hover {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        /* --- Standard Open/Close States --- */
+
+        .open .flap {
+            transform: rotateX(180deg);
+            z-index: 1;
+            transition-delay: 0.1s;
+        }
+        .open .flap::after, .open .flap::before {
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .open .letter {
+            /* Slide out of envelope */
+            transform: translateY(-160px) scale(1.05); 
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            z-index: 6;
+        }
+        
+        .close .flap {
+            transform: rotateX(0deg);
+            z-index: 5;
+            transition: transform 0.5s ease-in;
+        }
+
+        .close .letter {
+            transform: translateY(0) scale(1);
+            z-index: 2;
+            transition: transform 0.6s ease-in;
+        }
+
+        /* Floating Hearts */
+        .hearts {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+            overflow: visible;
+        }
+
+        .heart {
+            position: absolute;
+            opacity: 0;
+            background: #ff5e62;
+            display: inline-block;
+            height: 15px;
+            margin: 0 10px;
+            position: relative;
+            top: 0;
+            transform: rotate(-45deg);
+            width: 15px;
+        }
+        .heart:before, .heart:after {
+            content: "";
+            background: #ff5e62;
+            border-radius: 50%;
+            height: 15px;
+            position: absolute;
+            width: 15px;
+        }
+        .heart:before { top: -7.5px; left: 0; }
+        .heart:after { left: 7.5px; top: 0; }
+
+        .open .heart {
+            animation: floatUp 3s ease-in forwards;
+        }
+
+        .a1 { left: 10%; animation-delay: 1.0s; font-size: 10px; height: 10px; width: 10px; }
+        .a2 { left: 30%; animation-delay: 1.5s; }
+        .a3 { left: 50%; animation-delay: 1.2s; height: 12px; width: 12px; }
+        .a4 { left: 70%; animation-delay: 1.8s; font-size: 8px; height: 8px; width: 8px; }
+        .a5 { left: 85%; animation-delay: 2.0s; }
+
+        @keyframes floatUp {
+            0% { top: 50%; opacity: 1; transform: rotate(-45deg) scale(0.5); }
+            100% { top: -100px; opacity: 0; transform: rotate(-45deg) scale(1.2) translateX(20px); }
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes loveGlow {
+            from { opacity: 0.45; transform: scale(1); }
+            to { opacity: 0.85; transform: scale(1.05); }
+        }
+
+        @keyframes petalDrift {
+            0% {
+                opacity: 0;
+                transform: translate3d(0, 0, 0) rotate(45deg) scale(0.6);
+            }
+            12% {
+                opacity: 0.85;
+            }
+            100% {
+                opacity: 0;
+                transform: translate3d(var(--drift), -105vh, 0) rotate(var(--spin)) scale(1.15);
+            }
+        }
+
+        @keyframes glintPop {
+            0% {
+                opacity: 0;
+                transform: scale(0);
+            }
+            35% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+                transform: scale(1.8);
+            }
+        }
+
+        /* Controls */
+        .reset {
+            text-align: center;
+            width: 100%;
+            margin-top: 20px;
+            height: 60px;
+            z-index: 20;
+            transition: opacity 0.5s;
+        }
+
+        body.reading-mode .reset {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .reset button {
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            background: white;
+            border: none;
+            border-radius: 50px;
+            color: #ff5e62;
+            box-shadow: 0 4px 15px rgba(255, 94, 98, 0.3);
+            display: inline-block;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 0 10px;
+            padding: 12px 24px;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .reset button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 94, 98, 0.4);
+            background: #ff5e62;
+            color: white;
+        }
+        
+        /* Mobile Responsive */
+        @media (max-width: 400px) {
+            #envelope {
+                width: 280px;
+                height: 180px;
+            }
+            .flap {
+                border-top: 90px solid var(--envelope-color);
+                border-left: 140px solid transparent;
+                border-right: 140px solid transparent;
+            }
+            .pocket {
+                border-left: 140px solid var(--envelope-shadow);
+                border-right: 140px solid var(--envelope-shadow);
+                border-bottom: 100px solid var(--pocket-color);
+                border-top: 90px solid transparent;
+            }
+            .open .letter {
+                transform: translateY(-120px) scale(1.05);
+            }
+            body.reading-mode .letter {
+                width: auto;
+                height: 95dvh;
+                max-height: none;
+            }
+            h1.valentine { font-size: 2.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="reading-effects" aria-hidden="true"></div>
+
+    <h1 class="valentine">A Surprise for You</h1>
+    
+    <div class="envelope-wrapper">
+        <div id="envelope" class="close">
+            <div class="front flap"></div>
+            <div class="front pocket"></div>
+            
+            <div class="letter">
+                <!-- The X Button appears when in reading mode -->
+                <button class="close-reading-btn" onclick="closeFromReading()" title="Put back">✕</button>
+                
+                <div class="letter-content">
+                    <p class="salutation">My Dearest Bonolo,</p>
+                    
+                    <p class="body-text">
+                        From the moment we started talking, there was something about you that just felt right. Your intelligence, your way of thinking, and the way we seem to click so naturally really stands out to me. You’re truly amazing, and there’s a depth to you that I genuinely admire.
+                    </p>
+                    
+                    <p class="body-text">
+                        I find myself wanting to spend more time with you—getting to know you better, sharing conversations, and building something meaningful together. There’s something special about the way we connect, and it’s not something I take lightly.
+                    </p>
+                    
+                    <p class="body-text">
+                        As I sit here writing this, I realize how rare it is to find someone who understands me the way you do. I cherish the laughter we've shared and the quiet moments in between. Every conversation leaves me looking forward to the next one, and every memory we make is a treasure I hold close to my heart.
+                    </p>
+
+                    <p class="body-text">
+                        Life is unpredictable, but meeting you has been the most beautiful surprise. I want to be there for you, to support your dreams, and to walk beside you as we both grow. I promise to listen, to care, and to always be honest with you.
+                    </p>
+
+                    <p class="body-text">
+                        I’m really looking forward to spending more time with you, creating new stories, and seeing where this incredible journey takes us. You have brought so much light into my life, and for that, I am endlessly grateful.
+                    </p>
+
+                    <p class="body-text">
+                        With all my love and affection,
+                    </p>
+
+                    <p class="signature">Arnold</p>
                 </div>
             </div>
+
+            <div class="hearts">
+                <div class="heart a1"></div>
+                <div class="heart a2"></div>
+                <div class="heart a3"></div>
+                <div class="heart a4"></div>
+                <div class="heart a5"></div>
+            </div>
         </div>
-        <div class="reset">
-            <button id="open">Open</button>
-            <button id="reset">Close</button>
-        </div>
-        
-        <!-- Script JS -->
-        <script src="./script.js"></script>
-    </body>
+    </div>
+
+    <div class="reset">
+        <button id="open">Open Letter</button>
+        <button id="reset" style="display:none;">Put Back</button>
+    </div>
+    
+    <script>
+        $(document).ready(function() {
+            var envelope = $("#envelope");
+            var btn_open = $("#open");
+            var btn_reset = $("#reset");
+            var body = $("body");
+            var effectsLayer = $(".reading-effects");
+            
+            var isReadingMode = false;
+            var petalTimer = null;
+            var glintTimer = null;
+
+            function randomBetween(min, max) {
+                return Math.random() * (max - min) + min;
+            }
+
+            function createLovePetal() {
+                if (!isReadingMode) return;
+
+                var petal = $("<span class='love-petal'></span>");
+                var colors = ["#ff5e62", "#d6336c", "#ff9a9e", "#f783ac", "#ffccd5"];
+
+                petal.css({
+                    "--x": randomBetween(3, 97) + "vw",
+                    "--size": randomBetween(7, 16) + "px",
+                    "--duration": randomBetween(5.5, 9) + "s",
+                    "--drift": randomBetween(-80, 80) + "px",
+                    "--spin": randomBetween(160, 520) + "deg",
+                    "--petal-color": colors[Math.floor(Math.random() * colors.length)]
+                });
+
+                effectsLayer.append(petal);
+                setTimeout(function() {
+                    petal.remove();
+                }, 9200);
+            }
+
+            function createLoveGlint() {
+                if (!isReadingMode) return;
+
+                var glint = $("<span class='love-glint'></span>");
+                glint.css({
+                    "--x": randomBetween(8, 92) + "vw",
+                    "--y": randomBetween(8, 88) + "vh",
+                    "--size": randomBetween(3, 7) + "px"
+                });
+
+                effectsLayer.append(glint);
+                setTimeout(function() {
+                    glint.remove();
+                }, 1600);
+            }
+
+            function startLoveEffects() {
+                stopLoveEffects();
+                createLoveGlint();
+                for (var i = 0; i < 8; i++) {
+                    setTimeout(createLovePetal, i * 120);
+                }
+                petalTimer = setInterval(createLovePetal, 420);
+                glintTimer = setInterval(createLoveGlint, 900);
+            }
+
+            function stopLoveEffects() {
+                clearInterval(petalTimer);
+                clearInterval(glintTimer);
+                petalTimer = null;
+                glintTimer = null;
+                effectsLayer.empty();
+            }
+
+            // Open Envelope
+            function openEnvelope() {
+                envelope.addClass("open").removeClass("close");
+                btn_open.hide();
+                
+                // Wait for envelope to open, then transition to reading mode
+                setTimeout(function() {
+                    body.addClass("reading-mode");
+                    isReadingMode = true;
+                    startLoveEffects();
+                }, 800); 
+            }
+
+            // Close Envelope (Reset)
+            function closeEnvelope() {
+                body.removeClass("reading-mode");
+                isReadingMode = false;
+                stopLoveEffects();
+                
+                // Wait for transition back, then close flap
+                setTimeout(function() {
+                    envelope.addClass("close").removeClass("open");
+                    btn_reset.hide();
+                    setTimeout(function() {
+                        btn_open.fadeIn();
+                    }, 500);
+                }, 400);
+            }
+
+            // Global function for the 'X' button inside the letter
+            window.closeFromReading = function() {
+                closeEnvelope();
+            };
+
+            // Click Events
+            envelope.click(function() {
+                if(envelope.hasClass("close")) {
+                    openEnvelope();
+                }
+            });
+
+            btn_open.click(function(e) {
+                e.stopPropagation(); // Prevent triggering envelope click
+                openEnvelope();
+            });
+
+            btn_reset.click(function(e) {
+                e.stopPropagation();
+                closeEnvelope();
+            });
+        });
+    </script>
+</body>
 </html>
