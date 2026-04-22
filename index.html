@@ -595,6 +595,9 @@
 </head>
 <body>
     <div class="reading-effects" aria-hidden="true"></div>
+    <audio id="love-audio" loop preload="auto">
+        <source src="song.mp3" type="audio/mpeg">
+    </audio>
 
     <h1 class="valentine">A Surprise for You</h1>
     
@@ -660,10 +663,15 @@
             var btn_reset = $("#reset");
             var body = $("body");
             var effectsLayer = $(".reading-effects");
+            var loveAudio = document.getElementById("love-audio");
             
             var isReadingMode = false;
             var petalTimer = null;
             var glintTimer = null;
+
+            if (loveAudio) {
+                loveAudio.volume = 0.5;
+            }
 
             function randomBetween(min, max) {
                 return Math.random() * (max - min) + min;
@@ -716,6 +724,22 @@
                 glintTimer = setInterval(createLoveGlint, 900);
             }
 
+            function playLoveAudio() {
+                if (!loveAudio) return;
+
+                loveAudio.volume = 0.5;
+                loveAudio.play().catch(function() {
+                    // Browsers can block playback unless it follows a user click.
+                });
+            }
+
+            function stopLoveAudio() {
+                if (!loveAudio) return;
+
+                loveAudio.pause();
+                loveAudio.currentTime = 0;
+            }
+
             function stopLoveEffects() {
                 clearInterval(petalTimer);
                 clearInterval(glintTimer);
@@ -728,6 +752,7 @@
             function openEnvelope() {
                 envelope.addClass("open").removeClass("close");
                 btn_open.hide();
+                playLoveAudio();
                 
                 // Wait for envelope to open, then transition to reading mode
                 setTimeout(function() {
@@ -742,6 +767,7 @@
                 body.removeClass("reading-mode");
                 isReadingMode = false;
                 stopLoveEffects();
+                stopLoveAudio();
                 
                 // Wait for transition back, then close flap
                 setTimeout(function() {
